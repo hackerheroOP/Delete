@@ -12,7 +12,7 @@ def bot_status():
     })
 
 def run_web_server():
-    app.run(host="0.0.0.0", port=5000)
+    app.run(host="0.0.0.0", port=8000)
 
 # Run Flask server in a separate thread
 web_thread = Thread(target=run_web_server)

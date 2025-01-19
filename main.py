@@ -19,7 +19,7 @@ client = TelegramClient('filter_bot_session', API_ID, API_HASH).start(bot_token=
 CONFIG_FILE = 'filter_config.json'
 
 # URL pattern for detecting links
-URL_PATTERN = r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
+URL_PATTERN = r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
 
 class FilterBot:
     def __init__(self):
@@ -115,47 +115,21 @@ web_thread.start()
 async def start_command(event):
     if event.is_private:
         await event.respond(
-            "\ud83d\udc4b Welcome to the Content Filter Bot!\n\n"
+            "👋 Welcome to the Content Filter Bot!\n\n"
             "Available commands:\n"
-            "\ud83d\udd20 Word Commands:\n"
+            "🔤 Word Commands:\n"
             "/addword <word> - Add word to ban list\n"
             "/removeword <word> - Remove word from ban list\n"
             "/listwords - Show all banned words\n\n"
-            "\ud83d\udd17 Link Commands:\n"
+            "🔗 Link Commands:\n"
             "/allowlink <link> - Add link to whitelist\n"
             "/removelink <link> - Remove link from whitelist\n"
             "/listlinks - Show allowed links\n\n"
+            "/addchannel <channel_username_or_id> - Monitor a channel\n"
+            "/listchannels - Show all monitored channels\n"
+            "/removechannel <channel_username_or_id> - Stop monitoring a channel\n"
             "/help - Show detailed help"
         )
-
-@client.on(events.NewMessage(pattern='/addchannel'))
-async def add_channel_command(event):
-    if event.is_private:
-        sender = await event.get_sender()
-        # Customize admin check as needed
-        if not sender.bot:  
-            input_data = event.raw_text.replace('/addchannel', '').strip()
-
-            if input_data:
-                try:
-                    # Use get_input_entity for better compatibility
-                    chat = await client.get_input_entity(input_data)
-                    if isinstance(chat, PeerChannel):
-                        channel_id = str(chat.channel_id)
-                        if channel_id not in bot.config['monitored_channels']:
-                            bot.config['monitored_channels'].append(channel_id)
-                            bot.save_config()
-                            await event.respond(f"✅ Channel '{input_data}' added to monitored list.")
-                        else:
-                            await event.respond(f"⚠️ Channel '{input_data}' is already monitored.")
-                    else:
-                        await event.respond("❌ The provided entity is not a valid channel.")
-                except Exception as e:
-                    await event.respond(f"⚠️ Error adding channel: {str(e)}")
-            else:
-                await event.respond("❌ Please provide a valid channel username or ID.\nUsage: /addchannel <channel_username_or_id>")
-        else:
-            await event.respond("❌ Only admins can add channels.")
 
 @client.on(events.NewMessage(pattern='/addword'))
 async def add_word_command(event):
@@ -190,6 +164,89 @@ async def list_words_command(event):
             f"{words}"
         )
 
+@client.on(events.NewMessage(pattern='/allowlink'))
+async def allow_link_command(event):
+    if event.is_private:
+        link = event.raw_text.replace('/allowlink', '').strip()
+        if link:
+            if bot.add_allowed_link(link):
+                await event.respond(f"✅ Added '{link}' to allowed links.")
+            else:
+                await event.respond(f"⚠️ '{link}' is already allowed.")
+        else:
+            await event.respond("Please provide a link to allow.\nUsage: /allowlink <link>")
+
+@client.on(events.NewMessage(pattern='/removelink'))
+async def remove_link_command(event):
+    if event.is_private:
+        link = event.raw_text.replace('/removelink', '').strip()
+        if link:
+            if bot.remove_allowed_link(link):
+                await event.respond(f"❌ Removed '{link}' from allowed links.")
+            else:
+                await event.respond(f"⚠️ '{link}' is not in allowed links.")
+        else:
+            await event.respond("Please provide a link to remove.\nUsage: /removelink <link>")
+
+@client.on(events.NewMessage(pattern='/listlinks'))
+async def list_links_command(event):
+    if event.is_private:
+        links = '\n'.join(bot.config['allowed_links']) or 'No links allowed yet'
+        await event.respond(
+            "📋 Allowed Links List:\n\n"
+            f"{links}\n\n"
+            "All other links will be deleted automatically."
+        )
+
+@client.on(events.NewMessage(pattern='/addchannel'))
+async def add_channel_command(event):
+    if event.is_private:
+        sender = await event.get_sender()
+        if not sender.bot:
+            input_data = event.raw_text.replace('/addchannel', '').strip()
+            if input_data:
+                try:
+                    chat = await client.get_input_entity(input_data)
+                    if isinstance(chat, PeerChannel):
+                        channel_id = str(chat.channel_id)
+                        if channel_id not in bot.config['monitored_channels']:
+                            bot.config['monitored_channels'].append(channel_id)
+                            bot.save_config()
+                            await event.respond(f"✅ Channel '{input_data}' added to monitored list.")
+                        else:
+                            await event.respond(f"⚠️ Channel '{input_data}' is already monitored.")
+                    else:
+                        await event.respond("❌ The provided entity is not a valid channel.")
+                except Exception as e:
+                    await event.respond(f"⚠️ Error adding channel: {str(e)}")
+            else:
+                await event.respond("❌ Please provide a valid channel username or ID.\nUsage: /addchannel <channel_username_or_id>")
+        else:
+            await event.respond("❌ Only admins can add channels.")
+
+@client.on(events.NewMessage(pattern='/listchannels'))
+async def list_channels_command(event):
+    if event.is_private:
+        channels = '\n'.join(bot.config['monitored_channels']) or 'No channels being monitored'
+        await event.respond(
+            "📋 Monitored Channels List:\n\n"
+            f"{channels}"
+        )
+
+@client.on(events.NewMessage(pattern='/removechannel'))
+async def remove_channel_command(event):
+    if event.is_private:
+        channel_username_or_id = event.raw_text.replace('/removechannel', '').strip()
+        if channel_username_or_id:
+            if channel_username_or_id in bot.config['monitored_channels']:
+                bot.config['monitored_channels'].remove(channel_username_or_id)
+                bot.save_config()
+                await event.respond(f"❌ Removed channel '{channel_username_or_id}' from monitored list.")
+            else:
+                await event.respond(f"⚠️ '{channel_username_or_id}' is not in monitored channels.")
+        else:
+            await event.respond("❌ Please provide a valid channel username or ID.\nUsage: /removechannel <channel_username_or_id>")
+
 @client.on(events.NewMessage())
 async def handle_new_message(event):
     try:
@@ -218,8 +275,9 @@ async def handle_new_message(event):
         print(f"Error processing message: {str(e)}")
 
 async def main():
-    print("Bot started...")
+    print("Bot is running...")
     await client.run_until_disconnected()
 
 if __name__ == '__main__':
-    asyncio.get_event_loop().run_until_complete(main())
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(main())

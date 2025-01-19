@@ -84,12 +84,13 @@ class FilterBot:
         return any(allowed in cleaned_link for allowed in self.config['allowed_links'])
 
     def contains_banned_word(self, text):
-        """Check if text contains any banned words"""
-        text = text.lower()
-        for word in self.config['banned_words']:
-            if word in text:
-                return True, word
-        return False, None
+    """Check if text contains any banned words"""
+    text = text.lower()
+    for word in self.config['banned_words']:
+        if word in text:
+            return True, word
+    return False, None
+
 
 # Initialize bot
 bot = FilterBot()
@@ -235,6 +236,8 @@ async def add_channel_command(event):
                             await event.respond(f"⚠️ Channel '{channel_username_or_id}' is already monitored.")
                     else:
                         await event.respond("❌ The provided entity is not a valid channel.")
+                except ValueError:
+                    await event.respond("❌ The provided channel ID or username is not valid.")
                 except Exception as e:
                     await event.respond(f"⚠️ Error adding channel: {str(e)}")
             else:

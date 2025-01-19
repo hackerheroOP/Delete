@@ -92,25 +92,7 @@ class FilterBot:
 bot = FilterBot()
 
 # Flask app for health check (optional)
-from flask import Flask, jsonify
-from threading import Thread
 
-app_flask = Flask(__name__)
-
-@app_flask.route('/status', methods=['GET'])
-def bot_status():
-    return jsonify({
-        "status": "running",
-        "message": "The bot is active and monitoring channels."
-    })
-
-def run_web_server():
-    app_flask.run(host="0.0.0.0", port=8000, debug=False)
-
-# Start the Flask server in a separate thread
-web_thread = Thread(target=run_web_server)
-web_thread.daemon = True
-web_thread.start()
 
 @app.on_message(filters.command('start'))
 async def start_command(client, message: Message):

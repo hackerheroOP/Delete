@@ -112,6 +112,104 @@ web_thread = Thread(target=run_web_server)
 web_thread.daemon = True
 web_thread.start()
 
+@client.on(events.NewMessage(pattern='/start'))
+async def start_command(event):
+    if event.is_private:
+        await event.respond(
+            "👋 Welcome to the Content Filter Bot!\n\n"
+            "Available commands:\n"
+            "🔤 Word Commands:\n"
+            "/addword <word> - Add word to ban list\n"
+            "/removeword <word> - Remove word from ban list\n"
+            "/listwords - Show all banned words\n\n"
+            "🔗 Link Commands:\n"
+            "/allowlink <link> - Add link to whitelist\n"
+            "/removelink <link> - Remove link from whitelist\n"
+            "/listlinks - Show allowed links\n\n"
+            "/help - Show detailed help"
+        )
+
+@client.on(events.NewMessage(pattern='/addword'))
+async def add_word_command(event):
+    if event.is_private:
+        word = event.raw_text.replace('/addword', '').strip()
+        if word:
+            if bot.add_banned_word(word):
+                await event.respond(f"✅ Added '{word}' to banned words.")
+            else:
+                await event.respond(f"⚠️ '{word}' is already banned.")
+        else:
+            await event.respond("Please provide a word to ban.\nUsage: /addword <word>")
+
+@client.on(events.NewMessage(pattern='/removeword'))
+async def remove_word_command(event):
+    if event.is_private:
+        word = event.raw_text.replace('/removeword', '').strip()
+        if word:
+            if bot.remove_banned_word(word):
+                await event.respond(f"❌ Removed '{word}' from banned words.")
+            else:
+                await event.respond(f"⚠️ '{word}' is not in banned words.")
+        else:
+            await event.respond("Please provide a word to remove.\nUsage: /removeword <word>")
+
+@client.on(events.NewMessage(pattern='/listwords'))
+async def list_words_command(event):
+    if event.is_private:
+        words = '\n'.join(bot.config['banned_words']) or 'No banned words yet'
+        await event.respond(
+            "📋 Banned Words List:\n\n"
+            f"{words}"
+        )
+
+@client.on(events.NewMessage(pattern='/allowlink'))
+async def allow_link_command(event):
+    if event.is_private:
+        link = event.raw_text.replace('/allowlink', '').strip()
+        if link:
+            if bot.add_allowed_link(link):
+                await event.respond(f"✅ Added '{link}' to allowed links.")
+            else:
+                await event.respond(f"⚠️ '{link}' is already allowed.")
+        else:
+            await event.respond("Please provide a link to allow.\nUsage: /allowlink <link>")
+
+@client.on(events.NewMessage(pattern='/listlinks'))
+async def list_links_command(event):
+    if event.is_private:
+        links = '\n'.join(bot.config['allowed_links']) or 'No links allowed yet'
+        await event.respond(
+            "📋 Allowed Links List:\n\n"
+            f"{links}\n\n"
+            "All other links will be deleted automatically."
+        )
+
+@client.on(events.NewMessage())
+async def handle_new_message(event):
+    try:
+        # Check if message is in a monitored channel
+        if isinstance(event.message.peer_id, Channel):
+            channel_id = str(event.message.peer_id.channel_id)
+            if channel_id in bot.config['monitored_channels']:
+                if event.message.message:
+                    text = event.message.message
+                    
+                    # Check for banned words
+                    has_banned_word, banned_word = bot.contains_banned_word(text)
+                    if has_banned_word:
+                        await event.delete()
+                        print(f"Deleted message containing banned word: {banned_word}")
+                        return
+                    
+                    # Check for unauthorized links
+                    links = re.findall(URL_PATTERN, text)
+                    if links:
+                        for link in links:
+                            if not bot.is_link_allowed(link):
+                                await event.delete()
+                                print(f"Deleted message containing unauthorized link: {link}")
+                                return
+
 @client.on(events.NewMessage(pattern='/addchannel'))
 async def add_channel_command(event):
     if event.is_private:

@@ -56,9 +56,9 @@ class Bot:
 bot = Bot()
 
 # Initialize client
-API_ID = 'Promorningstar'
-API_HASH = 'Iz'
-BOT_TOKEN = 'Promutthal apna'
+API_ID = '2737672'
+API_HASH = 'f4aae49f836134236a19d434f8597c45'
+BOT_TOKEN = '7941752115:AAG_X1UpRyBymRn9dy120YmygAElhuqEE0M'
 
 client = TelegramClient('bot_session', API_ID, API_HASH)
 def is_admin(user_id):

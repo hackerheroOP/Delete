@@ -1,26 +1,6 @@
+
 from flask import Flask, jsonify
 from threading import Thread
-
-app = Flask(__name__)
-
-# Web route to check bot status
-@app.route('/status', methods=['GET'])
-def bot_status():
-    return jsonify({
-        "status": "running",
-        "message": "The bot is active and monitoring channels."
-    })
-
-def run_web_server():
-    app.run(host="0.0.0.0", port=8000)
-
-# Run Flask server in a separate thread
-web_thread = Thread(target=run_web_server)
-web_thread.start()
-
-# Include the existing bot logic below
-# (Paste the main bot code from your script here)
-
 from telethon import TelegramClient, events
 from telethon.tl.types import Channel
 import asyncio
@@ -114,102 +94,51 @@ class FilterBot:
 # Initialize bot
 bot = FilterBot()
 
+# Flask app for health check
+app = Flask(__name__)
+
+@app.route('/status', methods=['GET'])
+def bot_status():
+    return jsonify({
+        "status": "running",
+        "message": "The bot is active and monitoring channels."
+    })
+
+def run_web_server():
+    app.run(host="0.0.0.0", port=8000, debug=False)
+
+# Start the Flask server in a separate thread
+web_thread = Thread(target=run_web_server)
+web_thread.daemon = True
+web_thread.start()
+
 @client.on(events.NewMessage(pattern='/addchannel'))
 async def add_channel_command(event):
     if event.is_private:
-        # Get the user's information
         sender = await event.get_sender()
-        if not sender.bot and sender.participant.admin_rights:
-            # Extract channel username or ID from the command
+        # Ensure only admins can add channels
+        if not sender.bot:  # Customize admin check as needed
             channel_username_or_id = event.raw_text.replace('/addchannel', '').strip()
             
             if channel_username_or_id:
                 try:
-                    # Resolve the channel
                     chat = await client.get_entity(channel_username_or_id)
-                    
-                    # Check if it's a channel
                     if isinstance(chat, Channel):
                         channel_id = str(chat.id)
-                        
-                        if channel_id not all('@'and text ).append.appendbot.config['monitorappendmonitored_channels:
-Channel"]:
-                        
-Bot.exceptions(Bot Assertion.d.append(xvaluepath.strip)
-append.errorbotsyntaxvalue
-
-
-@client.on(events.NewMessage(pattern='/start'))
-async def start_command(event):
-    if event.is_private:
-        await event.respond(
-            "👋 Welcome to the Content Filter Bot!\n\n"
-            "Available commands:\n"
-            "🔤 Word Commands:\n"
-            "/addword <word> - Add word to ban list\n"
-            "/removeword <word> - Remove word from ban list\n"
-            "/listwords - Show all banned words\n\n"
-            "🔗 Link Commands:\n"
-            "/allowlink <link> - Add link to whitelist\n"
-            "/removelink <link> - Remove link from whitelist\n"
-            "/listlinks - Show allowed links\n\n"
-            "/help - Show detailed help"
-        )
-
-@client.on(events.NewMessage(pattern='/addword'))
-async def add_word_command(event):
-    if event.is_private:
-        word = event.raw_text.replace('/addword', '').strip()
-        if word:
-            if bot.add_banned_word(word):
-                await event.respond(f"✅ Added '{word}' to banned words.")
+                        if channel_id not in bot.config['monitored_channels']:
+                            bot.config['monitored_channels'].append(channel_id)
+                            bot.save_config()
+                            await event.respond(f"âœ… Channel '{channel_username_or_id}' added to monitored list.")
+                        else:
+                            await event.respond(f"âš ï¸ Channel '{channel_username_or_id}' is already monitored.")
+                    else:
+                        await event.respond("âŒ The provided entity is not a valid channel.")
+                except Exception as e:
+                    await event.respond(f"âš ï¸ Error adding channel: {str(e)}")
             else:
-                await event.respond(f"⚠️ '{word}' is already banned.")
+                await event.respond("Please provide a valid channel username or ID.\nUsage: /addchannel <channel_username_or_id>")
         else:
-            await event.respond("Please provide a word to ban.\nUsage: /addword <word>")
-
-@client.on(events.NewMessage(pattern='/removeword'))
-async def remove_word_command(event):
-    if event.is_private:
-        word = event.raw_text.replace('/removeword', '').strip()
-        if word:
-            if bot.remove_banned_word(word):
-                await event.respond(f"❌ Removed '{word}' from banned words.")
-            else:
-                await event.respond(f"⚠️ '{word}' is not in banned words.")
-        else:
-            await event.respond("Please provide a word to remove.\nUsage: /removeword <word>")
-
-@client.on(events.NewMessage(pattern='/listwords'))
-async def list_words_command(event):
-    if event.is_private:
-        words = '\n'.join(bot.config['banned_words']) or 'No banned words yet'
-        await event.respond(
-            "📋 Banned Words List:\n\n"
-            f"{words}"
-        )
-
-@client.on(events.NewMessage(pattern='/allowlink'))
-async def allow_link_command(event):
-    if event.is_private:
-        link = event.raw_text.replace('/allowlink', '').strip()
-        if link:
-            if bot.add_allowed_link(link):
-                await event.respond(f"✅ Added '{link}' to allowed links.")
-            else:
-                await event.respond(f"⚠️ '{link}' is already allowed.")
-        else:
-            await event.respond("Please provide a link to allow.\nUsage: /allowlink <link>")
-
-@client.on(events.NewMessage(pattern='/listlinks'))
-async def list_links_command(event):
-    if event.is_private:
-        links = '\n'.join(bot.config['allowed_links']) or 'No links allowed yet'
-        await event.respond(
-            "📋 Allowed Links List:\n\n"
-            f"{links}\n\n"
-            "All other links will be deleted automatically."
-        )
+            await event.respond("âŒ Only admins can add channels.")
 
 @client.on(events.NewMessage())
 async def handle_new_message(event):

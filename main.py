@@ -128,6 +128,68 @@ async def start_command(event):
             "/help - Show detailed help"
         )
 
+@client.on(events.NewMessage(pattern='/addchannel'))
+async def add_channel_command(event):
+    if event.is_private:
+        sender = await event.get_sender()
+        # Customize admin check as needed
+        if not sender.bot:  
+            input_data = event.raw_text.replace('/addchannel', '').strip()
+
+            if input_data:
+                try:
+                    # Use get_input_entity for better compatibility
+                    chat = await client.get_input_entity(input_data)
+                    if isinstance(chat, PeerChannel):
+                        channel_id = str(chat.channel_id)
+                        if channel_id not in bot.config['monitored_channels']:
+                            bot.config['monitored_channels'].append(channel_id)
+                            bot.save_config()
+                            await event.respond(f"✅ Channel '{input_data}' added to monitored list.")
+                        else:
+                            await event.respond(f"⚠️ Channel '{input_data}' is already monitored.")
+                    else:
+                        await event.respond("❌ The provided entity is not a valid channel.")
+                except Exception as e:
+                    await event.respond(f"⚠️ Error adding channel: {str(e)}")
+            else:
+                await event.respond("❌ Please provide a valid channel username or ID.\nUsage: /addchannel <channel_username_or_id>")
+        else:
+            await event.respond("❌ Only admins can add channels.")
+
+@client.on(events.NewMessage(pattern='/addword'))
+async def add_word_command(event):
+    if event.is_private:
+        word = event.raw_text.replace('/addword', '').strip()
+        if word:
+            if bot.add_banned_word(word):
+                await event.respond(f"✅ Added '{word}' to banned words.")
+            else:
+                await event.respond(f"⚠️ '{word}' is already banned.")
+        else:
+            await event.respond("Please provide a word to ban.\nUsage: /addword <word>")
+
+@client.on(events.NewMessage(pattern='/removeword'))
+async def remove_word_command(event):
+    if event.is_private:
+        word = event.raw_text.replace('/removeword', '').strip()
+        if word:
+            if bot.remove_banned_word(word):
+                await event.respond(f"❌ Removed '{word}' from banned words.")
+            else:
+                await event.respond(f"⚠️ '{word}' is not in banned words.")
+        else:
+            await event.respond("Please provide a word to remove.\nUsage: /removeword <word>")
+
+@client.on(events.NewMessage(pattern='/listwords'))
+async def list_words_command(event):
+    if event.is_private:
+        words = '\n'.join(bot.config['banned_words']) or 'No banned words yet'
+        await event.respond(
+            "📋 Banned Words List:\n\n"
+            f"{words}"
+        )
+
 @client.on(events.NewMessage())
 async def handle_new_message(event):
     try:

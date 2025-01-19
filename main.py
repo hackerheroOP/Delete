@@ -368,19 +368,48 @@ async def handle_new_message(event):
     except Exception as e:
         print(f"Error processing message: {str(e)}")
 
+from flask import Flask, jsonify
+import threading
+
+# Flask app initialization
+app = Flask(__name__)
+
+# Bot status route
+@app.route('/status', methods=['GET'])
+def bot_status():
+    return jsonify({
+        "status": "running",
+        "monitored_channels": len(bot.config['monitored_channels']),
+        "banned_words": len(bot.config['banned_words']),
+        "allowed_links": len(bot.config['allowed_links'])
+    })
+
+# Function to run Flask in a separate thread
+def run_flask():
+    app.run(host='0.0.0.0', port=8000)  # Runs on http://localhost:5000 by default
+
 async def main():
     print("Starting bot...")
+
+    # Start the Flask server in a separate thread
+    flask_thread = threading.Thread(target=run_flask)
+    flask_thread.daemon = True  # Ensures the thread stops when the main program exits
+    flask_thread.start()
+    print("Flask server started at http://localhost:5000/status")
+
     try:
-        # Start the client
+        # Start the Telegram client
         await client.start(bot_token=BOT_TOKEN)
         print("Bot is running!")
         print(f"Monitored channels: {len(bot.config['monitored_channels'])}")
         print(f"Banned words: {len(bot.config['banned_words'])}")
         print(f"Allowed links: {len(bot.config['allowed_links'])}")
         
+        # Keep the bot running
         await client.run_until_disconnected()
     except Exception as e:
         print(f"Error starting bot: {str(e)}")
+
 
 if __name__ == '__main__':
     # Run the bot

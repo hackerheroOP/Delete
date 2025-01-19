@@ -114,6 +114,31 @@ class FilterBot:
 # Initialize bot
 bot = FilterBot()
 
+@client.on(events.NewMessage(pattern='/addchannel'))
+async def add_channel_command(event):
+    if event.is_private:
+        # Get the user's information
+        sender = await event.get_sender()
+        if not sender.bot and sender.participant.admin_rights:
+            # Extract channel username or ID from the command
+            channel_username_or_id = event.raw_text.replace('/addchannel', '').strip()
+            
+            if channel_username_or_id:
+                try:
+                    # Resolve the channel
+                    chat = await client.get_entity(channel_username_or_id)
+                    
+                    # Check if it's a channel
+                    if isinstance(chat, Channel):
+                        channel_id = str(chat.id)
+                        
+                        if channel_id not all('@'and text ).append.appendbot.config['monitorappendmonitored_channels:
+Channel"]:
+                        
+Bot.exceptions(Bot Assertion.d.append(xvaluepath.strip)
+append.errorbotsyntaxvalue
+
+
 @client.on(events.NewMessage(pattern='/start'))
 async def start_command(event):
     if event.is_private:

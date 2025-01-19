@@ -220,6 +220,7 @@ async def add_channel_command(event):
 
             if channel_username_or_id:
                 try:
+                    # Attempt to get the channel entity
                     chat = await client.get_entity(channel_username_or_id)
                     if isinstance(chat, Channel):
                         channel_id = str(chat.id)
@@ -234,36 +235,10 @@ async def add_channel_command(event):
                 except Exception as e:
                     await event.respond(f"⚠️ Error adding channel: {str(e)}")
             else:
-                await event.respond("Please provide a valid channel username or ID.\nUsage: /addchannel <channel_username_or_id>")
+                await event.respond("❌ Please provide a valid channel username or ID.\nUsage: /addchannel <channel_username_or_id>")
         else:
             await event.respond("❌ Only admins can add channels.")
 
-
-@client.on(events.NewMessage())
-async def handle_new_message(event):
-    try:
-        # Check if message is in a monitored channel
-        if isinstance(event.message.peer_id, Channel):
-            channel_id = str(event.message.peer_id.channel_id)
-            if channel_id in bot.config['monitored_channels']:
-                if event.message.message:
-                    text = event.message.message
-                    
-                    # Check for banned words
-                    has_banned_word, banned_word = bot.contains_banned_word(text)
-                    if has_banned_word:
-                        await event.delete()
-                        print(f"Deleted message containing banned word: {banned_word}")
-                        return
-                    
-                    # Check for unauthorized links
-                    links = re.findall(URL_PATTERN, text)
-                    if links:
-                        for link in links:
-                            if not bot.is_link_allowed(link):
-                                await event.delete()
-                                print(f"Deleted message containing unauthorized link: {link}")
-                                return
                     
     except Exception as e:
         print(f"Error processing message: {str(e)}")

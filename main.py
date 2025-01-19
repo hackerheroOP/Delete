@@ -1,3 +1,26 @@
+from flask import Flask, jsonify
+from threading import Thread
+
+app = Flask(__name__)
+
+# Web route to check bot status
+@app.route('/status', methods=['GET'])
+def bot_status():
+    return jsonify({
+        "status": "running",
+        "message": "The bot is active and monitoring channels."
+    })
+
+def run_web_server():
+    app.run(host="0.0.0.0", port=5000)
+
+# Run Flask server in a separate thread
+web_thread = Thread(target=run_web_server)
+web_thread.start()
+
+# Include the existing bot logic below
+# (Paste the main bot code from your script here)
+
 from telethon import TelegramClient, events
 from telethon.tl.types import Channel
 import asyncio

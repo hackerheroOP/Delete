@@ -209,6 +209,9 @@ async def handle_new_message(event):
                                 await event.delete()
                                 print(f"Deleted message containing unauthorized link: {link}")
                                 return
+                                except Exception as e:
+        print(f"Error processing message: {str(e)}")
+
 
 @client.on(events.NewMessage(pattern='/addchannel'))
 async def add_channel_command(event):
@@ -238,11 +241,7 @@ async def add_channel_command(event):
                 await event.respond("❌ Please provide a valid channel username or ID.\nUsage: /addchannel <channel_username_or_id>")
         else:
             await event.respond("❌ Only admins can add channels.")
-
-                    
-    except Exception as e:
-        print(f"Error processing message: {str(e)}")
-
+            
 async def main():
     print("Bot started...")
     await client.run_until_disconnected()

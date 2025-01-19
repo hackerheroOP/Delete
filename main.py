@@ -162,14 +162,14 @@ async def add_word_command(client, message: Message):
 # ... other commands go here
 
 # Run both the bot and the Flask web server
-from threading import Thread
+#from threading import Thread
 
 # Function to run the bot
 def run_bot():
     app.run()  # This will block, as it's the method that starts the bot
 
 # Function to run the Flask web server
-def run_flask():
+"""def run_flask():
     flask_app.run(host='0.0.0.0', port=8000)
 
 # Function to run both bot and Flask app
@@ -187,3 +187,4 @@ if __name__ == '__main__':
 
 # Start both the bot and the web server
 
+"""

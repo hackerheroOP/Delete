@@ -217,7 +217,7 @@ async def add_channel_command(event):
         # Ensure only admins can add channels
         if not sender.bot:  # Customize admin check as needed
             channel_username_or_id = event.raw_text.replace('/addchannel', '').strip()
-            
+
             if channel_username_or_id:
                 try:
                     chat = await client.get_entity(channel_username_or_id)
@@ -226,17 +226,18 @@ async def add_channel_command(event):
                         if channel_id not in bot.config['monitored_channels']:
                             bot.config['monitored_channels'].append(channel_id)
                             bot.save_config()
-                            await event.respond(f"âœ… Channel '{channel_username_or_id}' added to monitored list.")
+                            await event.respond(f"✅ Channel '{channel_username_or_id}' added to monitored list.")
                         else:
-                            await event.respond(f"âš ï¸ Channel '{channel_username_or_id}' is already monitored.")
+                            await event.respond(f"⚠️ Channel '{channel_username_or_id}' is already monitored.")
                     else:
-                        await event.respond("âŒ The provided entity is not a valid channel.")
+                        await event.respond("❌ The provided entity is not a valid channel.")
                 except Exception as e:
-                    await event.respond(f"âš ï¸ Error adding channel: {str(e)}")
+                    await event.respond(f"⚠️ Error adding channel: {str(e)}")
             else:
                 await event.respond("Please provide a valid channel username or ID.\nUsage: /addchannel <channel_username_or_id>")
         else:
-            await event.respond("âŒ Only admins can add channels.")
+            await event.respond("❌ Only admins can add channels.")
+
 
 @client.on(events.NewMessage())
 async def handle_new_message(event):

@@ -1,8 +1,7 @@
-
 from flask import Flask, jsonify
 from threading import Thread
 from telethon import TelegramClient, events
-from telethon.tl.types import Channel
+from telethon.tl.types import PeerChannel
 import asyncio
 import json
 import os
@@ -81,7 +80,7 @@ class FilterBot:
     def is_link_allowed(self, link):
         """Check if a link is in the allowed list"""
         cleaned_link = re.sub(r'https?://(www\.)?', '', link.lower())
-        return any(allowed in cleaned_link for allowed in self.config['allowed_links'])
+        return any(cleaned_link.startswith(allowed) for allowed in self.config['allowed_links'])
 
     def contains_banned_word(self, text):
         """Check if text contains any banned words"""
@@ -116,132 +115,46 @@ web_thread.start()
 async def start_command(event):
     if event.is_private:
         await event.respond(
-            "👋 Welcome to the Content Filter Bot!\n\n"
+            "\ud83d\udc4b Welcome to the Content Filter Bot!\n\n"
             "Available commands:\n"
-            "🔤 Word Commands:\n"
+            "\ud83d\udd20 Word Commands:\n"
             "/addword <word> - Add word to ban list\n"
             "/removeword <word> - Remove word from ban list\n"
             "/listwords - Show all banned words\n\n"
-            "🔗 Link Commands:\n"
+            "\ud83d\udd17 Link Commands:\n"
             "/allowlink <link> - Add link to whitelist\n"
             "/removelink <link> - Remove link from whitelist\n"
             "/listlinks - Show allowed links\n\n"
             "/help - Show detailed help"
         )
 
-@client.on(events.NewMessage(pattern='/addword'))
-async def add_word_command(event):
-    if event.is_private:
-        word = event.raw_text.replace('/addword', '').strip()
-        if word:
-            if bot.add_banned_word(word):
-                await event.respond(f"✅ Added '{word}' to banned words.")
-            else:
-                await event.respond(f"⚠️ '{word}' is already banned.")
-        else:
-            await event.respond("Please provide a word to ban.\nUsage: /addword <word>")
-
-@client.on(events.NewMessage(pattern='/removeword'))
-async def remove_word_command(event):
-    if event.is_private:
-        word = event.raw_text.replace('/removeword', '').strip()
-        if word:
-            if bot.remove_banned_word(word):
-                await event.respond(f"❌ Removed '{word}' from banned words.")
-            else:
-                await event.respond(f"⚠️ '{word}' is not in banned words.")
-        else:
-            await event.respond("Please provide a word to remove.\nUsage: /removeword <word>")
-
-@client.on(events.NewMessage(pattern='/listwords'))
-async def list_words_command(event):
-    if event.is_private:
-        words = '\n'.join(bot.config['banned_words']) or 'No banned words yet'
-        await event.respond(
-            "📋 Banned Words List:\n\n"
-            f"{words}"
-        )
-
-@client.on(events.NewMessage(pattern='/allowlink'))
-async def allow_link_command(event):
-    if event.is_private:
-        link = event.raw_text.replace('/allowlink', '').strip()
-        if link:
-            if bot.add_allowed_link(link):
-                await event.respond(f"✅ Added '{link}' to allowed links.")
-            else:
-                await event.respond(f"⚠️ '{link}' is already allowed.")
-        else:
-            await event.respond("Please provide a link to allow.\nUsage: /allowlink <link>")
-
-@client.on(events.NewMessage(pattern='/listlinks'))
-async def list_links_command(event):
-    if event.is_private:
-        links = '\n'.join(bot.config['allowed_links']) or 'No links allowed yet'
-        await event.respond(
-            "📋 Allowed Links List:\n\n"
-            f"{links}\n\n"
-            "All other links will be deleted automatically."
-        )
-
 @client.on(events.NewMessage())
 async def handle_new_message(event):
     try:
-        # Check if message is in a monitored channel
-        if isinstance(event.message.peer_id, Channel):
-            channel_id = str(event.message.peer_id.channel_id)
-            if channel_id in bot.config['monitored_channels']:
-                if event.message.message:
-                    text = event.message.message
-                    
-                    # Check for banned words
-                    has_banned_word, banned_word = bot.contains_banned_word(text)
-                    if has_banned_word:
-                        await event.delete()
-                        print(f"Deleted message containing banned word: {banned_word}")
-                        return
-                    
-                    # Check for unauthorized links
-                    links = re.findall(URL_PATTERN, text)
-                    if links:
-                        for link in links:
-                            if not bot.is_link_allowed(link):
-                                await event.delete()
-                                print(f"Deleted message containing unauthorized link: {link}")
-                                return
+        peer_id = event.message.peer_id
+        if isinstance(peer_id, PeerChannel):
+            channel_id = str(peer_id.channel_id)
+            if channel_id in bot.config['monitored_channels'] and event.message.message:
+                text = event.message.message
+
+                # Check for banned words
+                has_banned_word, banned_word = bot.contains_banned_word(text)
+                if has_banned_word:
+                    await event.delete()
+                    print(f"Deleted message containing banned word: {banned_word}")
+                    return
+
+                # Check for unauthorized links
+                links = re.findall(URL_PATTERN, text)
+                if links:
+                    for link in links:
+                        if not bot.is_link_allowed(link):
+                            await event.delete()
+                            print(f"Deleted message containing unauthorized link: {link}")
+                            return
     except Exception as e:
         print(f"Error processing message: {str(e)}")
 
-
-@client.on(events.NewMessage(pattern='/addchannel'))
-async def add_channel_command(event):
-    if event.is_private:
-        sender = await event.get_sender()
-        # Ensure only admins can add channels
-        if not sender.bot:  # Customize admin check as needed
-            channel_username_or_id = event.raw_text.replace('/addchannel', '').strip()
-
-            if channel_username_or_id:
-                try:
-                    # Attempt to get the channel entity
-                    chat = await client.get_entity(channel_username_or_id)
-                    if isinstance(chat, Channel):
-                        channel_id = str(chat.id)
-                        if channel_id not in bot.config['monitored_channels']:
-                            bot.config['monitored_channels'].append(channel_id)
-                            bot.save_config()
-                            await event.respond(f"✅ Channel '{channel_username_or_id}' added to monitored list.")
-                        else:
-                            await event.respond(f"⚠️ Channel '{channel_username_or_id}' is already monitored.")
-                    else:
-                        await event.respond("❌ The provided entity is not a valid channel.")
-                except Exception as e:
-                    await event.respond(f"⚠️ Error adding channel: {str(e)}")
-            else:
-                await event.respond("❌ Please provide a valid channel username or ID.\nUsage: /addchannel <channel_username_or_id>")
-        else:
-            await event.respond("❌ Only admins can add channels.")
-            
 async def main():
     print("Bot started...")
     await client.run_until_disconnected()

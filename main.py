@@ -162,14 +162,28 @@ async def add_word_command(client, message: Message):
 # ... other commands go here
 
 # Run both the bot and the Flask web server
-def run_bot_and_flask():
-    # Run the pyrogram bot in a separate thread
-    loop = asyncio.get_event_loop()
-    loop.create_task(app.run())
+from threading import Thread
 
-    # Run the Flask web server for logs
+# Function to run the bot
+def run_bot():
+    app.run()  # This will block, as it's the method that starts the bot
+
+# Function to run the Flask web server
+def run_flask():
     flask_app.run(host='0.0.0.0', port=8000)
+
+# Function to run both bot and Flask app
+def run_bot_and_flask():
+    # Run Pyrogram bot in a separate thread
+    bot_thread = Thread(target=run_bot)
+    bot_thread.start()
+
+    # Run Flask web server for logs
+    run_flask()
 
 # Start both the bot and the web server
 if __name__ == '__main__':
     run_bot_and_flask()
+
+# Start both the bot and the web server
+

@@ -195,7 +195,7 @@ async def handle_new_message(event):
                     text = event.message.message
                     
                     # Check for banned words
-                    banned_word, banned_word = bot.contains_banned_word(text)
+                    has_banned_word, banned_word = bot.contains_banned_word(text)
                     if has_banned_word:
                         await event.delete()
                         print(f"Deleted message containing banned word: {banned_word}")

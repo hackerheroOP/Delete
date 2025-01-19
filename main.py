@@ -7,6 +7,9 @@ import os
 
 # URL Pattern for link detection
 URL_PATTERN = r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
+# List of admin user IDs
+ADMIN_IDS = [5847637609, 1251111009]
+
 
 class Bot:
     def __init__(self):
@@ -58,10 +61,16 @@ API_HASH = 'Iz'
 BOT_TOKEN = 'Promutthal apna'
 
 client = TelegramClient('bot_session', API_ID, API_HASH)
+def is_admin(user_id):
+    return user_id in ADMIN_IDS
+
 
 @client.on(events.NewMessage(pattern='/start'))
 async def start_command(event):
     if event.is_private:
+        if not is_admin(event.sender_id):
+            await event.respond("❌ You are not authorized to use this bot.")
+            return
         await event.respond(
             "👋 Welcome to the Content Filter Bot!\n\n"
             "Available commands:\n\n"
@@ -103,6 +112,9 @@ async def help_command(event):
 @client.on(events.NewMessage(pattern='/addword'))
 async def add_word_command(event):
     if event.is_private:
+        if not is_admin(event.sender_id):
+            await event.respond("❌ You are not authorized to use this bot.")
+            return
         word = event.raw_text.replace('/addword', '').strip().lower()
         if word:
             if word not in bot.config['banned_words']:
@@ -117,6 +129,9 @@ async def add_word_command(event):
 @client.on(events.NewMessage(pattern='/removeword'))
 async def remove_word_command(event):
     if event.is_private:
+        if not is_admin(event.sender_id):
+            await event.respond("❌ You are not authorized to use this bot.")
+            return
         word = event.raw_text.replace('/removeword', '').strip().lower()
         if word:
             if word in bot.config['banned_words']:
@@ -131,6 +146,9 @@ async def remove_word_command(event):
 @client.on(events.NewMessage(pattern='/listwords'))
 async def list_words_command(event):
     if event.is_private:
+        if not is_admin(event.sender_id):
+            await event.respond("❌ You are not authorized to use this bot.")
+            return
         words = bot.config['banned_words']
         if words:
             word_list = "\n".join(f"• {word}" for word in words)
@@ -141,6 +159,9 @@ async def list_words_command(event):
 @client.on(events.NewMessage(pattern='/allowlink'))
 async def allow_link_command(event):
     if event.is_private:
+        if not is_admin(event.sender_id):
+            await event.respond("❌ You are not authorized to use this bot.")
+            return
         link = event.raw_text.replace('/allowlink', '').strip().lower()
         if link:
             if link not in bot.config['allowed_links']:
@@ -155,6 +176,9 @@ async def allow_link_command(event):
 @client.on(events.NewMessage(pattern='/removelink'))
 async def remove_link_command(event):
     if event.is_private:
+        if not is_admin(event.sender_id):
+            await event.respond("❌ You are not authorized to use this bot.")
+            return
         link = event.raw_text.replace('/removelink', '').strip().lower()
         if link:
             if link in bot.config['allowed_links']:
@@ -169,6 +193,9 @@ async def remove_link_command(event):
 @client.on(events.NewMessage(pattern='/listlinks'))
 async def list_links_command(event):
     if event.is_private:
+        if not is_admin(event.sender_id):
+            await event.respond("❌ You are not authorized to use this bot.")
+            return
         links = bot.config['allowed_links']
         if links:
             link_list = "\n".join(f"• {link}" for link in links)
@@ -179,6 +206,9 @@ async def list_links_command(event):
 @client.on(events.NewMessage(pattern='/addchannel'))
 async def add_channel_command(event):
     if event.is_private:
+        if not is_admin(event.sender_id):
+            await event.respond("❌ You are not authorized to use this bot.")
+            return
         channel = event.raw_text.replace('/addchannel', '').strip()
         if channel:
             try:
@@ -211,6 +241,9 @@ async def add_channel_command(event):
 @client.on(events.NewMessage(pattern='/removechannel'))
 async def remove_channel_command(event):
     if event.is_private:
+        if not is_admin(event.sender_id):
+            await event.respond("❌ You are not authorized to use this bot.")
+            return
         channel = event.raw_text.replace('/removechannel', '').strip()
         if channel:
             try:
@@ -234,6 +267,9 @@ async def remove_channel_command(event):
 @client.on(events.NewMessage(pattern='/listchannels'))
 async def list_channels_command(event):
     if event.is_private:
+        if not is_admin(event.sender_id):
+            await event.respond("❌ You are not authorized to use this bot.")
+            return
         channels = bot.config['monitored_channels']
         if channels:
             channel_list = []

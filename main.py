@@ -209,7 +209,7 @@ async def handle_new_message(event):
                                 await event.delete()
                                 print(f"Deleted message containing unauthorized link: {link}")
                                 return
-                                except Exception as e:
+    except Exception as e:
         print(f"Error processing message: {str(e)}")
 
 

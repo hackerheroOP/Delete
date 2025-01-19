@@ -29,9 +29,9 @@ import os
 import re
 
 # Bot configuration
-API_ID = 'your_api_id'
-API_HASH = 'your_api_hash'
-BOT_TOKEN = 'your_bot_token'
+API_ID = '2737672'
+API_HASH = 'f4aae49f836134236a19d434f8597c45'
+BOT_TOKEN = '7941752115:AAHAmDj-tUqNNuQGr32vt35-a2hv13aaL6Q'
 
 # Initialize the client
 client = TelegramClient('filter_bot_session', API_ID, API_HASH).start(bot_token=BOT_TOKEN)
